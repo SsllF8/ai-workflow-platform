@@ -211,7 +211,7 @@ register_node(MyCustomNode)
 import nodes.my_custom_node
 ```
 
-### 💡 面试要点 / Interview Talking Points
+### 💡 项目亮点 / Project Highlights
 
 **1. 工作流引擎的设计模式？**
 - **策略模式**：每个节点是一个策略，通过统一的 `execute()` 接口调用
@@ -335,7 +335,7 @@ cp .env.example .env  # Fill in your DEEPSEEK_API_KEY
 streamlit run app.py
 ```
 
-### Interview Talking Points
+### Project Highlights
 
 **1. Design patterns in the workflow engine?**
 - **Strategy Pattern**: Each node is a strategy with unified `execute()` interface
