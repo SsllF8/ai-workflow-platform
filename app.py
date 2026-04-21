@@ -14,6 +14,7 @@ from nodes import NODE_REGISTRY
 # 导入所有节点模块以触发注册
 import nodes.input_node
 import nodes.web_scrape_node
+import nodes.file_upload_node
 import nodes.ai_text_node
 import nodes.ai_summary_node
 import nodes.ai_keywords_node
@@ -31,10 +32,261 @@ st.set_page_config(
 # ==================== 全局样式 ====================
 st.markdown("""
 <style>
+    /* ===== 隐藏 Streamlit 自带白条/装饰 ===== */
+    header[data-testid="stHeader"] {
+        background: rgba(245,247,250,0) !important;
+    }
+    [data-testid="stToolbar"] {
+        background: rgba(245,247,250,0) !important;
+    }
+    footer[data-testid="stFooter"] {
+        background: rgba(245,247,250,0) !important;
+    }
+    footer[data-testid="stFooter"] > div {
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+    /* 去掉 Streamlit 默认的顶部汉堡菜单和部署按钮的白色背景条 */
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
+    /* 去掉侧边栏底部的空白 */
+    [data-testid="stSidebar"] > div:last-child {
+        min-height: 0 !important;
+    }
+    
+    /* ===== 强制浅色主题：覆盖所有 Streamlit 原生组件 ===== */
+    
     /* 整体背景 */
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f0 100%);
+        color: #1e293b;
     }
+    
+    /* 侧边栏 */
+    [data-testid="stSidebar"] {
+        background: white;
+        color: #1e293b;
+    }
+    [data-testid="stSidebar"] * {
+        color: #1e293b !important;
+    }
+    
+    /* ===== 按钮统一改浅色 ===== */
+    
+    /* 主内容区按钮（非 primary） */
+    .stButton > button[kind="secondary"],
+    .stButton > button:not([kind]) {
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px;
+        transition: all 0.2s;
+    }
+    .stButton > button[kind="secondary"]:hover,
+    .stButton > button:not([kind]):hover {
+        background: #e2e8f0 !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+    }
+    
+    /* Primary 按钮 */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px;
+    }
+    .stButton > button[kind="primary"]:hover {
+        opacity: 0.9;
+    }
+    
+    /* 侧边栏按钮 */
+    [data-testid="stSidebar"] .stButton > button {
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px;
+        transition: all 0.2s;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background: #e8edf5 !important;
+        color: #1e293b !important;
+        border-color: #667eea !important;
+        transform: translateX(4px);
+    }
+    
+    /* ===== Radio（Tab 导航）===== */
+    .stRadio > div > label > div {
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+    }
+    .stRadio > div > label > div:hover {
+        background: #e8edf5 !important;
+        border-color: #667eea !important;
+    }
+    .stRadio > div > label > div[data-checked="true"],
+    .stRadio > div[aria-checked="true"] > label > div,
+    .stRadio > div > label > div.pxcVml {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-color: transparent !important;
+    }
+    
+    /* ===== 全局 Label 文字强制深色 ===== */
+    .stSelectbox label, .stTextInput label, .stTextArea label,
+    .stNumberInput label, .stCheckbox label, .stRadio label,
+    .stSlider label, .stFileUploader label {
+        color: #1e293b !important;
+    }
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] label {
+        color: #1e293b !important;
+    }
+    .stSelectbox > div > div > label,
+    .stTextInput > div > div > label,
+    .stTextArea > div > div > label {
+        color: #1e293b !important;
+    }
+    /* 确保所有小标题、caption、标签都是深色 */
+    h2, h3, h4, h5, h6, p, span, div, li, td, th, label {
+        color: #1e293b;
+    }
+    st-markdown p, st-markdown span, st-markdown li {
+        color: #1e293b !important;
+    }
+    
+    /* ===== Selectbox / Dropdown 美化 ===== */
+    [data-testid="stSelectbox"] > div > div {
+        background: white !important;
+        color: #334155 !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stSelectbox"] > div > div:hover {
+        border-color: #a5b4fc !important;
+        box-shadow: 0 2px 12px rgba(102,126,234,0.1) !important;
+    }
+    [data-testid="stSelectbox"] svg {
+        fill: #64748b !important;
+    }
+    /* Selectbox 下拉选项面板 - 终极覆盖 */
+    [data-testid="stSelectbox"] + div,
+    [data-testid="stSelectbox"] + div > div,
+    [data-testid="stSelectbox"] + div > div > div,
+    [data-testid="stSelectbox"] ~ div,
+    [data-testid="stSelectbox"] ~ div > div,
+    [data-testid="stSelectbox"] ~ div > div > div {
+        background-color: white !important;
+        background: white !important;
+    }
+    /* BaseWeb 下拉菜单容器 */
+    .stSelectbox [class*="popover"],
+    .stSelectbox [class*="menu"],
+    .stSelectbox [class*="listbox"],
+    .stSelectbox [class*="dropdown"] {
+        background-color: white !important;
+        color: #1e293b !important;
+    }
+    .stSelectbox [class*="menu"] [class*="option"],
+    .stSelectbox [class*="menu"] li {
+        background-color: white !important;
+        color: #1e293b !important;
+    }
+    .stSelectbox [class*="menu"] [class*="option"]:hover,
+    .stSelectbox [class*="menu"] li:hover {
+        background-color: #f1f5f9 !important;
+    }
+    /* BaseWeb Select 内部文字 */
+    [data-testid="stSelectbox"] span {
+        color: #1e293b !important;
+    }
+    
+    /* ===== Text Input 美化 ===== */
+    [data-testid="stTextInput"] > div > div {
+        background: white !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stTextInput"] > div > div:hover {
+        border-color: #a5b4fc !important;
+    }
+    [data-testid="stTextInput"] > div > div:focus-within {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
+    }
+    [data-testid="stTextInput"] input {
+        background: transparent !important;
+        color: #1e293b !important;
+        font-size: 14px !important;
+    }
+    
+    /* ===== Text Area 美化 ===== */
+    [data-testid="stTextArea"] > div > div {
+        background: white !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stTextArea"] > div > div:hover {
+        border-color: #a5b4fc !important;
+    }
+    [data-testid="stTextArea"] > div > div:focus-within {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 3px rgba(102,126,234,0.15) !important;
+    }
+    [data-testid="stTextArea"] textarea {
+        background: transparent !important;
+        color: #1e293b !important;
+        font-size: 14px !important;
+        min-height: 150px !important;
+    }
+    [data-testid="stTextArea"] textarea::placeholder {
+        color: #94a3b8 !important;
+    }
+    [data-testid="stTextInput"] input::placeholder {
+        color: #94a3b8 !important;
+    }
+    
+    /* ===== Expander ===== */
+    [data-testid="stExpander"] {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stExpander"] > div > summary,
+    [data-testid="stExpander"] > div > summary > p,
+    [data-testid="stExpander"] > div > summary > span {
+        color: #1e293b !important;
+    }
+    
+    /* ===== Info / Success / Warning / Error 框 ===== */
+    [data-testid="stAlert"] {
+        background: #f0f7ff !important;
+        color: #1e293b !important;
+        border-left-color: #667eea !important;
+    }
+    
+    /* ===== 滚动条美化 ===== */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    
+    /* ===== 自定义组件样式 ===== */
     
     /* 主内容区 */
     .main-content {
@@ -118,15 +370,6 @@ st.markdown("""
         margin: 8px 0;
     }
     
-    /* 侧边栏节点按钮 */
-    [data-testid="stSidebar"] .stButton > button {
-        border-radius: 10px;
-        transition: all 0.2s;
-    }
-    [data-testid="stSidebar"] .stButton > button:hover {
-        transform: translateX(4px);
-    }
-    
     /* 模板卡片 */
     .template-card {
         background: white;
@@ -135,6 +378,7 @@ st.markdown("""
         padding: 20px;
         transition: all 0.3s;
         margin-bottom: 12px;
+        color: #1e293b;
     }
     .template-card:hover {
         border-color: #667eea;
@@ -157,9 +401,15 @@ st.markdown("""
         border-bottom: none;
     }
     
-    /* 让 textarea 更大 */
-    [data-testid="stTextArea"] textarea {
-        min-height: 150px !important;
+    /* 表格文字颜色 */
+    [data-testid="stTable"] td,
+    [data-testid="stTable"] th {
+        color: #1e293b !important;
+    }
+    
+    /* Markdown 区域文字 */
+    .stMarkdown p, .stMarkdown li, .stMarkdown span, .stMarkdown div {
+        color: #1e293b;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -223,7 +473,7 @@ with header_col1:
     """, unsafe_allow_html=True)
 with header_col2:
     st.markdown("""
-    <p style="color:#64748b;margin-top:24px;">可视化编排 AI 工作流 · 9 种智能节点 · 模板一键加载 · 实时运行预览</p>
+    <p style="color:#64748b;margin-top:24px;">可视化编排 AI 工作流 · 10 种智能节点 · 模板一键加载 · 实时运行预览</p>
     """, unsafe_allow_html=True)
 
 # ==================== Tab 导航 ====================
@@ -252,7 +502,7 @@ if tab_create:
         """, unsafe_allow_html=True)
         
         node_categories = {
-            "📥 输入源": ("node-type-input", ["text_input", "web_scrape"]),
+            "📥 输入源": ("node-type-input", ["text_input", "web_scrape", "file_upload"]),
             "🤖 AI 处理": ("node-type-ai", ["ai_text", "ai_summary", "ai_keywords", "ai_extract", "ai_sentiment", "ai_code"]),
             "📤 输出": ("node-type-output", ["file_export"]),
         }
@@ -269,10 +519,10 @@ if tab_create:
                             default_config[field["key"]] = field.get("default", "")
                         st.session_state.workflow.add_node({"type": node_type, "config": default_config})
                         st.rerun()
-            st.divider()
+            st.markdown('<div style="margin:4px 0;"></div>', unsafe_allow_html=True)
     
-    # 主内容区：上下布局
-    st.markdown('<div class="main-content">', unsafe_allow_html=True)
+    # 主内容区：上下布局（透明包裹，不显示白条）
+    st.markdown('<div style="display:none">', unsafe_allow_html=True)
     
     # ---- 上半部分：工作流编辑 + 运行结果 ----
     workflow_col, result_col = st.columns([1.2, 1])
@@ -299,31 +549,9 @@ if tab_create:
                 st.rerun()
         with bar4:
             if st.button("💾 存为模板", use_container_width=True, disabled=len(st.session_state.workflow.nodes) == 0):
-                st.session_state.show_save_dialog = True
+                        st.session_state.show_save_dialog = True
         
-        # 保存对话框
-        if st.session_state.get("show_save_dialog"):
-            with st.form("save_form"):
-                name = st.text_input("模板名称", placeholder="输入模板名称...")
-                desc = st.text_area("模板描述", placeholder="简要描述这个模板的用途...", height=68)
-                c1, c2 = st.columns(2)
-                with c1:
-                    if st.form_submit_button("✅ 保存"):
-                        if name:
-                            st.session_state.saved_workflows.append({
-                                "name": name,
-                                "description": desc,
-                                "nodes": [dict(n) for n in st.session_state.workflow.nodes]
-                            })
-                            st.session_state.show_save_dialog = False
-                            st.success(f"模板「{name}」已保存！")
-                            st.rerun()
-                with c2:
-                    if st.form_submit_button("❌ 取消"):
-                        st.session_state.show_save_dialog = False
-                        st.rerun()
-        
-        st.markdown("---")
+        st.markdown('<div style="margin:8px 0;"></div>', unsafe_allow_html=True)
         
         # 工作流节点
         nodes = st.session_state.workflow.nodes
@@ -347,7 +575,7 @@ if tab_create:
                 node = node_class()
                 
                 # 节点类型分类
-                if node_type in ["text_input", "web_scrape"]:
+                if node_type in ["text_input", "web_scrape", "file_upload"]:
                     badge = '<span class="node-type-input">输入</span>'
                 elif node_type == "file_export":
                     badge = '<span class="node-type-output">输出</span>'
@@ -367,7 +595,6 @@ if tab_create:
                     <p style="color:#94a3b8;font-size:13px;margin:2px 0 0;">{node.description}</p>
                     """, unsafe_allow_html=True)
                 with header_cols[2]:
-                    st.write("")
                     if st.button("❌", key=f"del_{i}", help="删除节点"):
                         st.session_state.workflow.remove_node(i)
                         st.session_state.run_result = None
@@ -406,6 +633,29 @@ if tab_create:
                             )
                         
                         node_config["config"][key] = new_val
+                
+                # 文件上传节点特殊处理
+                if node_type == "file_upload":
+                    accept_types = node.accept_types
+                    accept_str = ",".join(accept_types)
+                    uploaded_file = st.file_uploader(
+                        "选择文件",
+                        type=[t.replace(".", "") for t in accept_types],
+                        key=f"upload_{i}",
+                        label_visibility="visible"
+                    )
+                    if uploaded_file:
+                        file_bytes = uploaded_file.read()
+                        node_config["config"]["file_bytes"] = file_bytes
+                        node_config["config"]["filename"] = uploaded_file.name
+                        ext = os.path.splitext(uploaded_file.name.lower())[1]
+                        type_name = nodes.file_upload_node.EXTRACTORS.get(ext, ("未知", None))[0]
+                        size_kb = len(file_bytes) / 1024
+                        st.success(f"已加载: {uploaded_file.name} ({type_name}, {size_kb:.1f} KB)")
+                    else:
+                        # 清除之前的文件数据
+                        node_config["config"].pop("file_bytes", None)
+                        node_config["config"].pop("filename", None)
                 
                 # 连接箭头
                 if i < len(nodes) - 1:
@@ -485,7 +735,7 @@ if tab_create:
     st.markdown('</div>', unsafe_allow_html=True)
     
     # ---- 下半部分：输入与运行 ----
-    st.markdown('<div class="main-content">', unsafe_allow_html=True)
+    st.markdown('<div style="display:none">', unsafe_allow_html=True)
     
     nodes = st.session_state.workflow.nodes
     if nodes:
@@ -506,16 +756,12 @@ if tab_create:
                 st.info("💡 第一个节点是「文本输入」，请直接在节点中填写内容")
         
         with run_col2:
-            st.write("")  # 留出间距让按钮对齐
-            st.write("")
             if st.button("🚀 运行工作流", type="primary", use_container_width=True):
                 with st.spinner("正在执行工作流..."):
                     st.session_state.run_result = st.session_state.workflow.run(initial_input)
                 st.rerun()
         
         with run_col3:
-            st.write("")
-            st.write("")
             if st.session_state.run_result:
                 if st.button("🔄 清除结果", use_container_width=True):
                     st.session_state.run_result = None
@@ -589,7 +835,7 @@ if tab_guide:
         st.markdown("""
         <div class="main-content">
             <h3>🚀 快速上手</h3>
-            <ol style="line-height:2.2;">
+            <ol style="line-height:2.2;color:#1e293b;">
                 <li><strong>添加节点</strong> — 从左侧面板点击节点按钮</li>
                 <li><strong>配置参数</strong> — 设置每个节点的处理选项</li>
                 <li><strong>输入内容</strong> — 在底部输入起始内容</li>
@@ -603,7 +849,7 @@ if tab_guide:
         st.markdown("""
         <div class="main-content">
             <h3>💡 小技巧</h3>
-            <ul style="line-height:2.2;">
+            <ul style="line-height:2.2;color:#1e293b;">
                 <li>不知道怎么搭配？试试「模板库」里的预置模板</li>
                 <li>创建好的工作流可以「存为模板」方便复用</li>
                 <li>结果支持一键复制或导出为 TXT 文件</li>
@@ -615,7 +861,7 @@ if tab_guide:
     st.markdown("""
     <div class="main-content">
         <h3>🧩 节点说明</h3>
-        <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;border-collapse:collapse;color:#1e293b;">
             <tr style="background:#f8f9fa;">
                 <th style="text-align:left;padding:12px;border-radius:8px 0 0 0;">节点</th>
                 <th style="text-align:left;padding:12px;">功能</th>

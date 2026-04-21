@@ -40,7 +40,8 @@
 ### ✨ 功能特性
 
 - 🔧 **可视化工作流编辑器** — 添加、配置、排序、删除节点的直观 UI
-- 🧩 **9 种内置节点类型** — 覆盖输入、处理、AI、输出全流程
+- 🧩 **10 种内置节点类型** — 覆盖输入、处理、AI、输出全流程
+- 📎 **文件上传** — 支持 PDF/Word/Excel/图片等 20+ 种格式
 - ▶️ **一键执行** — 运行整个工作流，查看每个节点的输出
 - 📋 **模板库** — 4 个预置工作流模板
 - 💾 **保存自定义模板** — 将工作流保存为可复用模板
@@ -53,6 +54,7 @@
 |------|------|------|
 | **输入** | 📥 文本输入 | 用户提供的工作流起始文本 |
 | **输入** | 🌐 网页抓取 | 从 URL 获取并提取文本内容 |
+| **输入** | 📎 文件上传 | 上传 PDF/Word/Excel/图片等文件，自动提取内容 |
 | **AI** | 🤖 AI 文本生成 | 通用文本生成，自定义 prompt |
 | **AI** | 📝 AI 摘要 | 将长文本浓缩为简洁摘要 |
 | **AI** | 🔑 AI 关键词提取 | 从文本中提取重要关键词和主题 |
@@ -127,6 +129,7 @@ ai-workflow-platform/
 │   ├── __init__.py             # 节点注册表 & 基类
 │   ├── input_node.py           # 文本输入节点
 │   ├── web_scrape_node.py      # 网页抓取节点
+│   ├── file_upload_node.py     # 文件上传节点（PDF/Word/Excel/图片等）
 │   ├── ai_text_node.py         # AI 文本生成节点
 │   ├── ai_summary_node.py      # AI 摘要节点
 │   ├── ai_keywords_node.py     # AI 关键词提取节点
@@ -282,7 +285,7 @@ A **no-code AI pipeline builder**. Instead of writing scripts to chain AI operat
 ### Features
 
 - 🔧 **Visual Workflow Editor** — Add, configure, reorder, and delete nodes
-- 🧩 **9 Built-in Node Types** — Input, processing, AI, and output operations
+- 🧩 **10 Built-in Node Types** — Input, processing, AI, and output operations
 - ▶️ **One-Click Execution** — Run the entire workflow and see per-node results
 - 📋 **Template Library** — 4 pre-built templates
 - 💾 **Save Custom Templates** — Save workflows for reuse
@@ -294,6 +297,7 @@ A **no-code AI pipeline builder**. Instead of writing scripts to chain AI operat
 |----------|------|-------------|
 | **Input** | 📥 Text Input | User-provided text as starting point |
 | **Input** | 🌐 Web Scrape | Fetch and extract text from a URL |
+| **Input** | 📎 File Upload | Upload PDF/Word/Excel/images, auto-extract content |
 | **AI** | 🤖 AI Text Generation | General-purpose text generation |
 | **AI** | 📝 AI Summary | Condense text into concise summary |
 | **AI** | 🔑 AI Keyword Extraction | Extract important keywords |
